@@ -1,7 +1,5 @@
-#create a new load balancer
-
 resource "aws_elb" "terra-elb" {
-  name =  "terra-elb"
+  name = "terra-elb"
   subnets = aws_subnet.public.*.id
   security_groups = [aws_security_group.webservers.id]
 
@@ -20,39 +18,43 @@ resource "aws_elb" "terra-elb" {
     unhealthy_threshold = 2
   }
 
-  instances  =[aws_instance.webservers[0].id, aws_instance.webservers[1].id]
-cross_zone_load_balancing = true
-  idle_timeout =  100
+  # Specify only two instances for the ELB
+  instances = [
+    aws_instance.webservers[0].id,
+    aws_instance.webservers[1].id
+  ]
+
+  cross_zone_load_balancing = true
+  idle_timeout = 100
   connection_draining = true
-connection_draining_timeout = 300
+  connection_draining_timeout = 300
+
   tags = {
-    Name ="terraform-elb"
-
+    Name = "terraform-elb"
   }
-
 }
+
 output "elb-dns-name" {
   value = aws_elb.terra-elb.dns_name
 }
 
-# create autoscaling
-
+# Create autoscaling
 resource "aws_launch_configuration" "terra-autoscaling" {
   name = "terra-autoscaling-launch-configuration"
-  image_id      = "ami-0529ae4622e1288aa"
+  image_id = "ami-0529ae4622e1288aa"
   instance_type = "t2.micro"
 }
 
 resource "aws_autoscaling_group" "terra-autoscaling" {
-  availability_zones  = ["us-west-2a","us-west-2b"]
+  availability_zones = ["us-west-2a", "us-west-2b"]
   desired_capacity = 2
   launch_configuration = aws_launch_configuration.terra-autoscaling.name
   max_size = 3
   min_size = 1
-  tag {
-    key                 = "Name"
-    propagate_at_launch = true
-    value               = "webservers"
-  }
 
+  tag {
+    key = "Name"
+    propagate_at_launch = true
+    value = "webservers"
+  }
 }
